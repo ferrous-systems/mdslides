@@ -1,0 +1,17 @@
+# CI that:
+#
+# * reports the licenses of all dependencies
+
+name: Licenses
+
+on: [push, pull_request]
+
+jobs:
+  do_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install cargo-license
+        run: cargo install cargo-license
+      - name: Print Licences
+        run: cargo license
