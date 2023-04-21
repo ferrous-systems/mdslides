@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use clap::Parser;
 
-/// Simple program convert an mdbook to a slide deck
+/// Simple program to convert an mdbook to a slide deck
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
