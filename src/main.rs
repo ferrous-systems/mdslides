@@ -1,4 +1,4 @@
-//! # sliders - a simple Markdown to Slide converter
+//! # mdslides - a simple Markdown to Slide converter
 //!
 //! Written by Jonathan Pallant at Ferrous Systems
 
@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use clap::Parser;
 
-/// Simple program to greet a person
+/// Simple program convert an mdbook to a slide deck
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
