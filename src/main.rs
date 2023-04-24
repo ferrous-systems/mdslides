@@ -8,9 +8,27 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use clap::Parser;
 
-/// Simple program to convert an mdbook to a slide deck
+static ABOUT_TEXT: &str = concat!(
+    env!("CARGO_PKG_DESCRIPTION"),
+    r#"
+
+This program is licensed as "#,
+    env!("CARGO_PKG_LICENSE"),
+    r#", at your option.
+
+For a list of dependencies included in this binary, refer to the source code.
+The canonical source code location is "#,
+    env!("CARGO_PKG_REPOSITORY"),
+    r#"
+
+You are running version "#,
+    env!("CARGO_PKG_VERSION"),
+    "."
+);
+
+/// Command line arguments for this program.
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = ABOUT_TEXT)]
 struct Args {
     /// The mdbook to process
     #[arg(long)]
