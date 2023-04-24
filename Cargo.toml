@@ -1,6 +1,6 @@
 [package]
 name = "mdslides"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "A tool to convert markdown into reveal.js slides"
 authors = ["Jonathan Pallant <jonathan.pallant@ferrous-systems.com>"]
