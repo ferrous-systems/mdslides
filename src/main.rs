@@ -20,9 +20,13 @@ struct Args {
     #[arg(long)]
     output_dir: PathBuf,
 
-    /// The HTML Template
+    /// The HTML Template for the slides.
     #[arg(long)]
     template: PathBuf,
+
+    /// The HTML Template for the index.
+    #[arg(long)]
+    index_template: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -115,6 +119,7 @@ fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&args.output_dir)
         .with_context(|| format!("Creating {}", args.output_dir.display()))?;
 
+    // Process each chapter
     for (chapter_path, title) in chapters.iter() {
         log::info!("Processing {}: {:?}", chapter_path, title);
         let in_path = {
@@ -131,6 +136,18 @@ fn main() -> anyhow::Result<()> {
         process(&in_path, &out_path, &template, title)?;
     }
 
+    // Generate index page
+    if let Some(path) = args.index_template.as_ref() {
+        let index_template = std::fs::read_to_string(path)?;
+        log::info!("Processing index");
+        let out_path = {
+            let mut path = args.output_dir;
+            path.push("index.html");
+            path
+        };
+        generate_index(chapters.as_slice(), &out_path, &index_template, book_title)?;
+    }
+
     log::info!("Done!");
 
     Ok(())
@@ -139,7 +156,9 @@ fn main() -> anyhow::Result<()> {
 /// Processes a markdown file into an HTML document, using the given template.
 ///
 /// The template should contain the string `$TITLE`, which is the title of the
-/// chapter, and `$CONTENT` which will be the Markdown slide contents.
+/// chapter, and `$CONTENT` which will be the Markdown slide contents. We assume
+/// your template has an integrated Markdown-to-HTML convertor, like reveal.js
+/// does.
 fn process(in_path: &Path, out_path: &Path, template: &str, title: &str) -> std::io::Result<()> {
     log::debug!(
         "in_path: {:?}, out_path: {:?}, title: {:?}",
@@ -168,6 +187,37 @@ fn process(in_path: &Path, out_path: &Path, template: &str, title: &str) -> std:
         }
         writeln!(output_file, "{}", line)?;
     }
+
+    Ok(())
+}
+
+/// Processes a list of chapters into an HTML document, using the given template.
+///
+/// The template should contain the string `$INDEX` which is replaced with
+/// a simple HTML unordered list of all the chapter headings as links.
+fn generate_index(
+    chapters: &[(String, String)],
+    out_path: &Path,
+    template: &str,
+    title: &str,
+) -> std::io::Result<()> {
+    // Build chapter list as HTML
+    let mut chapter_list = String::new();
+    chapter_list.push_str("<ul>");
+    for (chapter_path, title) in chapters {
+        let new_filename = chapter_path.replace("md", "html");
+        chapter_list.push_str(&format!(
+            "<li><a href=\"{}\">{}</a></li>\n",
+            new_filename, title
+        ));
+    }
+    chapter_list.push_str("</ul>");
+
+    let generated = template.replace("$INDEX", &chapter_list);
+
+    let generated = generated.replace("$TITLE", title);
+
+    std::fs::write(out_path, generated)?;
 
     Ok(())
 }
