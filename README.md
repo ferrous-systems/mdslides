@@ -18,6 +18,8 @@ $ mdslides --mdbook-path ~/Documents/my-slides --output-dir ./html --template ~/
 
 It will create a new HTML file for every chapter in your `mdbook`. Each HTML file will be a copy of the template, but with the string `$TITLE` replaced with the title of the chapter, and the string `$CONTENT` replaced with the Markdown source of that chapter. Additionally, each `# Heading` or `## Subheading` in the Markdown will have an `---` divider added before it. The reveal.js framework uses this to indicate when a new page is required, so each heading them forms a new slide.
 
+You can also pass `--index-template ./index-template.html` and a file called `${OUTPUT_DIR}/index.html` will be created using that template, replacing `$INDEX` with a series of HTML headings, subheadings and links to each slide deck.
+
 You can see an example of using this tool at <https://github.com/ferrous-systems/material-templates>.
 
 ## License
