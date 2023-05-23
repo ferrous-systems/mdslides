@@ -22,6 +22,10 @@ You can also pass `--index-template ./index-template.html` and a file called `${
 
 You can see an example of using this tool at <https://github.com/ferrous-systems/material-templates>.
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md)
+
 ## License
 
 This crate is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
