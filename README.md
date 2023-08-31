@@ -20,7 +20,7 @@ It will create a new HTML file for every chapter in your `mdbook`. Each HTML fil
 
 You can also pass `--index-template ./index-template.html` and a file called `${OUTPUT_DIR}/index.html` will be created using that template, replacing `$INDEX` with a series of HTML headings, subheadings and links to each slide deck.
 
-You can see an example of using this tool at <https://github.com/ferrous-systems/material-templates>.
+You can see an example of using this tool at <https://github.com/ferrous-systems/rust-training>.
 
 ## Changelog
 
