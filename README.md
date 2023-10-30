@@ -22,6 +22,10 @@ You can also pass `--index-template ./index-template.html` and a file called `${
 
 You can see an example of using this tool at <https://github.com/ferrous-systems/rust-training>.
 
+## MSRV
+
+We check this crate compiles with Rust 1.70.
+
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md)
