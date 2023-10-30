@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.0 (2023-05-23, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.4.0))
+
+* Supports 'empty' links in the SUMMARY.md page
+* Updated cargo-dist, produces bash and powershell installers
+
 ## v0.3.0 (2023-05-23, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.3.0))
 
 * The `index.html` file now includes headings and subheadings
