@@ -99,6 +99,9 @@ pub fn run(
             IndexEntry::SubHeading(_heading) => {
                 // Ignore
             }
+            IndexEntry::Chapter { title, path } if path.is_empty() => {
+                log::info!("Processing placeholder: {:?}", title);
+            }
             IndexEntry::Chapter { title, path } => {
                 log::info!("Processing {}: {:?}", path, title);
                 let in_path = {
@@ -265,6 +268,13 @@ pub fn generate_index(
     let mut heading_is_open = false;
     for entry in chapters {
         match entry {
+            IndexEntry::Chapter { title, path } if path.is_empty() => {
+                if !heading_is_open {
+                    generated_html.push_str("<ul>\n");
+                    heading_is_open = true;
+                }
+                generated_html.push_str(&format!("<li>{}</li>\n", title));
+            }
             IndexEntry::Chapter { title, path } => {
                 if !heading_is_open {
                     generated_html.push_str("<ul>\n");
@@ -327,6 +337,10 @@ mod test {
                 title: "Link Title 2".to_owned(),
                 path: "./test2.md".to_owned(),
             },
+            IndexEntry::Chapter {
+                title: "Link Title 3".to_owned(),
+                path: String::new(),
+            },
         ];
         let title = "My Title";
         let template = "<title>$TITLE</title>\n$INDEX";
@@ -344,6 +358,7 @@ mod test {
             <h2>SubHeading 2</h2>\n\
             <ul>\n\
             <li><a href=\"./test2.html\">Link Title 2</a></li>\n\
+            <li>Link Title 3</li>\n\
             </ul>\n"
         );
     }
@@ -370,7 +385,7 @@ mod test {
         ## Subheading 2.1\n\
         \n\
         -   [Link 5](./link5.md)\n\
-        -   [Link 6](./link6.md)\n\
+        -   [Link 6]()\n\
         ";
         let index_entries = load_book(summary_src).unwrap();
         assert_eq!(
@@ -403,7 +418,7 @@ mod test {
                 },
                 IndexEntry::Chapter {
                     title: "Link 6".to_string(),
-                    path: "./link6.md".to_string()
+                    path: String::new(),
                 },
             ]
         );
