@@ -4,6 +4,7 @@
 
 use std::io::prelude::*;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
 /// Describes the ways in which this library can fail.
 #[derive(thiserror::Error, Debug)]
@@ -210,6 +211,83 @@ pub fn load_book(summary_src: &str) -> Result<Vec<IndexEntry>, Error> {
     Ok(index_entries)
 }
 
+/// Adds `<section>` around <h1> and <h2> slides.
+struct SlideAdapter {
+    first: AtomicBool,
+    no_heading_slide: AtomicBool,
+    in_speaker_notes: AtomicBool,
+}
+
+impl SlideAdapter {
+    fn new() -> SlideAdapter {
+        SlideAdapter {
+            first: AtomicBool::new(true),
+            no_heading_slide: AtomicBool::new(false),
+            in_speaker_notes: AtomicBool::new(false),
+        }
+    }
+}
+
+impl comrak::adapters::HeadingAdapter for SlideAdapter {
+    fn enter(
+        &self,
+        output: &mut dyn Write,
+        heading: &comrak::adapters::HeadingMeta,
+        _sourcepos: Option<comrak::nodes::Sourcepos>,
+    ) -> std::io::Result<()> {
+        if heading.level == 3 && heading.content == "Notes" {
+            // the start of speaker notes.
+            writeln!(output, r#"<aside class="notes">"#)?;
+            self.in_speaker_notes.store(true, Relaxed);
+        } else if heading.level <= 2 {
+            // We break slides on # and ##
+            if !self.first.load(Relaxed) {
+                // we have a previous slide open. Close it
+
+                // but first close any speaker notes
+                if self.in_speaker_notes.load(Relaxed) {
+                    self.in_speaker_notes.store(false, Relaxed);
+                    writeln!(output, "</aside>")?;
+                }
+                // now close the slide
+                writeln!(output, "</section>")?;
+            } else {
+                self.first.store(false, Relaxed);
+            }
+            // open a new slide
+            writeln!(output, "<section>")?;
+        }
+
+        if heading.content == "NO_HEADING" {
+            // this is a slide with no heading - comment out the fake heading
+            self.no_heading_slide.store(true, Relaxed);
+            writeln!(output, "<!-- ")?;
+        } else {
+            // write out the heading
+            self.no_heading_slide.store(false, Relaxed);
+            writeln!(output, "<h{}>", heading.level)?;
+        }
+
+        Ok(())
+    }
+
+    fn exit(
+        &self,
+        output: &mut dyn Write,
+        heading: &comrak::adapters::HeadingMeta,
+    ) -> std::io::Result<()> {
+        if self.no_heading_slide.load(Relaxed) {
+            // stop hiding the fake heading
+            writeln!(output, " -->")?;
+            self.no_heading_slide.store(false, Relaxed);
+        } else {
+            // close the heading
+            writeln!(output, "</h{}>", heading.level)?;
+        }
+        Ok(())
+    }
+}
+
 /// Processes a markdown file into an HTML document, using the given template.
 ///
 /// The template should contain the string `$TITLE`, which is the title of the
@@ -231,9 +309,16 @@ pub fn generate_deck(
 
     let generated = template.replace("$TITLE", title);
 
-    let content = std::fs::read_to_string(in_path)?;
+    let md_content = std::fs::read_to_string(in_path)?;
 
-    let generated = generated.replace("$CONTENT", &content);
+    let md_content = md_content.replace("---", "## NO_HEADING");
+    let slide_adapter = SlideAdapter::new();
+    let options = comrak::Options::default();
+    let mut plugins = comrak::Plugins::default();
+    plugins.render.heading_adapter = Some(&slide_adapter);
+    let html = comrak::markdown_to_html_with_plugins(&md_content, &options, &plugins);
+
+    let generated = generated.replace("$CONTENT", &html);
 
     let mut output_file = std::fs::File::create(out_path)?;
 
