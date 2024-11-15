@@ -237,9 +237,11 @@ pub fn generate_deck(
 
     let md_content = md_content.replace("---", "## NO_HEADING");
     let slide_adapter = plugins::SlideAdapter::new();
+    let syntax_highlighter = plugins::SyntaxHighlighter::new();
     let options = comrak::Options::default();
     let mut plugins = comrak::Plugins::default();
     plugins.render.heading_adapter = Some(&slide_adapter);
+    plugins.render.codefence_syntax_highlighter = Some(&syntax_highlighter);
     let html = comrak::markdown_to_html_with_plugins(&md_content, &options, &plugins);
 
     let generated = generated.replace("$CONTENT", &html);
