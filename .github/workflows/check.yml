@@ -22,8 +22,8 @@ jobs:
         run: cargo build
       - name: Clippy
         run: cargo clippy --all-targets --all-features
-      - name: Build with 1.70
+      - name: Build with 1.74
         run: |
           cargo clean
-          rustup update 1.70 --no-self-update
-          cargo +1.70 build
+          rustup update 1.74 --no-self-update
+          cargo +1.74 build

@@ -24,7 +24,7 @@ You can see an example of using this tool at <https://github.com/ferrous-systems
 
 ## MSRV
 
-We check this crate compiles with Rust 1.70.
+We check this crate compiles with Rust 1.74.
 
 ## Changelog
 
