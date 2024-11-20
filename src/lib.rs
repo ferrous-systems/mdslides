@@ -243,8 +243,12 @@ pub fn generate_deck(
         // Find end-of-block, in case it's the end of a diagram.
         if line == "```" {
             if let Some(diagram_str) = collecting_diagram.take() {
-                // This is the end of a mermaid block
-                println!("Got graph: {:?}", diagram_str);
+                // This is the end of a dot block
+                log::debug!("Got graph: {:?}", diagram_str);
+                log::info!(
+                    "Calling graphviz to render diagram in {}",
+                    in_path.display()
+                );
                 let diagram = graphviz_rust::exec_dot(
                     diagram_str,
                     vec![graphviz_rust::cmd::CommandArg::Format(
@@ -265,7 +269,7 @@ pub fn generate_deck(
         if let Some(graph_str) = collecting_diagram.as_mut() {
             graph_str.push_str(line);
             graph_str.push('\n');
-            // Don't emit the mermaid code
+            // Don't emit the dot code
             continue;
         }
 
