@@ -90,6 +90,8 @@ pub fn run(
 
     std::fs::create_dir_all(output_dir)?;
 
+    let mermaid_renderer = mermaid_rs::Mermaid::new().expect("starting mermaid");
+
     // Process each chapter
     for entry in index_entries.iter() {
         match entry {
@@ -115,7 +117,7 @@ pub fn run(
                     temp_path.push(new_filename);
                     temp_path
                 };
-                generate_deck(&in_path, &out_path, slide_template, title)?;
+                generate_deck(&in_path, &out_path, slide_template, title, &mermaid_renderer)?;
             }
         }
     }
@@ -221,6 +223,7 @@ pub fn generate_deck(
     out_path: &Path,
     template: &str,
     title: &str,
+    mermaid_renderer: &mermaid_rs::Mermaid,
 ) -> std::io::Result<()> {
     log::debug!(
         "in_path: {:?}, out_path: {:?}, title: {:?}",
@@ -228,7 +231,6 @@ pub fn generate_deck(
         out_path,
         title
     );
-
     let generated = template.replace("$TITLE", title);
 
     let content = std::fs::read_to_string(in_path)?;
@@ -237,8 +239,38 @@ pub fn generate_deck(
 
     let mut output_file = std::fs::File::create(out_path)?;
 
+    let mut collecting_mermaid: Option<String> = None;
     let mut first = true;
     for line in generated.lines() {
+        // Find end-of-block, in case it's the end of a mermaid diagram.
+        if line == "```" {
+            if let Some(mermaid_str) = collecting_mermaid.take() {
+                // This is the end of a mermaid block
+                println!("Got mermaid: {:?}", mermaid_str);
+                let diagram = mermaid_renderer.render(&mermaid_str).expect("Running mermaid");
+                // insert the SVG in-line
+                writeln!(output_file, "<figure>{}</figure>", diagram)?;
+                // Don't emit the code fence
+                continue;
+            }
+        }
+
+        // Are we in a mermaid diagram?
+        if let Some(mermaid_string) = collecting_mermaid.as_mut() {
+            mermaid_string.push_str(line);
+            mermaid_string.push_str("\n");
+            // Don't emit the mermaid code
+            continue;
+        }
+
+        // starting a new mermaid diagram
+        if line == "```mermaid" {
+            collecting_mermaid = Some(String::new());
+            // Don't emit the code fence
+            continue;
+        }
+        
+        // Fixup headings into slide breaks
         if line.starts_with("## ") || line.starts_with("# ") {
             // Don't put a --- before the first heading, as it's our first slide
             if !first {
@@ -247,6 +279,7 @@ pub fn generate_deck(
                 first = false;
             }
         }
+
         writeln!(output_file, "{}", line)?;
     }
 
