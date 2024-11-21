@@ -237,8 +237,50 @@ pub fn generate_deck(
 
     let mut output_file = std::fs::File::create(out_path)?;
 
+    let mut collecting_diagram: Option<String> = None;
     let mut first = true;
     for line in generated.lines() {
+        // Find end-of-block, in case it's the end of a diagram.
+        if line == "```" {
+            if let Some(diagram_str) = collecting_diagram.take() {
+                // This is the end of a dot block
+                log::debug!("Got graph: {:?}", diagram_str);
+                log::info!(
+                    "Calling graphviz to render diagram in {}",
+                    in_path.display()
+                );
+                let diagram = graphviz_rust::exec_dot(
+                    diagram_str,
+                    vec![graphviz_rust::cmd::CommandArg::Format(
+                        graphviz_rust::cmd::Format::Svg,
+                    )],
+                )
+                .expect("Failed to generate graph");
+                // insert the SVG in-line
+                writeln!(output_file, "<figure>")?;
+                output_file.write_all(&diagram)?;
+                writeln!(output_file, "</figure>")?;
+                // Don't emit the code fence
+                continue;
+            }
+        }
+
+        // Are we in a diagram?
+        if let Some(graph_str) = collecting_diagram.as_mut() {
+            graph_str.push_str(line);
+            graph_str.push('\n');
+            // Don't emit the dot code
+            continue;
+        }
+
+        // starting a new diagram
+        if line.starts_with("```dot") && line.contains("process") {
+            collecting_diagram = Some(String::new());
+            // Don't emit the code fence
+            continue;
+        }
+
+        // Fixup headings into slide breaks
         if line.starts_with("## ") || line.starts_with("# ") {
             // Don't put a --- before the first heading, as it's our first slide
             if !first {

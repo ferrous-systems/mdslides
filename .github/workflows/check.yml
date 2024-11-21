@@ -15,15 +15,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Add tools
+        run: sudo apt-get update -y && sudo apt-get install -y graphviz
       - name: Format
         run: cargo fmt --check
       - name: Build
         run: cargo build
+      - name: Test
+        run: cargo test
       - name: Clippy
         run: cargo clippy --all-targets --all-features
-      - name: Build with 1.70
+      - name: Build with 1.74
         run: |
           cargo clean
-          rustup update 1.70 --no-self-update
-          cargo +1.70 build
+          rustup update 1.74 --no-self-update
+          cargo +1.74 build
