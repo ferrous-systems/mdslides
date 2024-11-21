@@ -16,8 +16,8 @@ fn build_slides() {
     .expect("mdslides failed");
 
     let comparison = folder_compare::FolderCompare::new(
-        Path::new("tests/reference_out"),
         Path::new("tests/data_out"),
+        Path::new("tests/reference_out"),
         &vec![],
     )
     .expect("failed to compare");
