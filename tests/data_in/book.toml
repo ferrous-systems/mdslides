@@ -1,0 +1,6 @@
+[book]
+authors = ["Jonathan Pallant"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Sample Book"
