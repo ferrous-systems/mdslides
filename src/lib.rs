@@ -5,6 +5,8 @@
 use std::io::prelude::*;
 use std::path::Path;
 
+mod plugins;
+
 /// Describes the ways in which this library can fail.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -231,9 +233,18 @@ pub fn generate_deck(
 
     let generated = template.replace("$TITLE", title);
 
-    let content = std::fs::read_to_string(in_path)?;
+    let md_content = std::fs::read_to_string(in_path)?;
 
-    let generated = generated.replace("$CONTENT", &content);
+    let md_content = md_content.replace("---", "## NO_HEADING");
+    let slide_adapter = plugins::SlideAdapter::new();
+    let syntax_highlighter = plugins::SyntaxHighlighter::new();
+    let options = comrak::Options::default();
+    let mut plugins = comrak::Plugins::default();
+    plugins.render.heading_adapter = Some(&slide_adapter);
+    plugins.render.codefence_syntax_highlighter = Some(&syntax_highlighter);
+    let html = comrak::markdown_to_html_with_plugins(&md_content, &options, &plugins);
+
+    let generated = generated.replace("$CONTENT", &html);
 
     let mut output_file = std::fs::File::create(out_path)?;
 
