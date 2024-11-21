@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.5.0 (2024-11-21, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.5.0))
+
+* Converts `dot` code blocks into SVG using Graphviz
+* Upgrade cargo-dist
+* Added some test cases
+
 ## v0.4.0 (2023-05-23, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.4.0))
 
 * Supports 'empty' links in the SUMMARY.md page
