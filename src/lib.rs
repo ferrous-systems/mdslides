@@ -90,12 +90,12 @@ pub fn run(
     let summary_src = std::fs::read_to_string(&mdbook_summary_path)?;
 
     // Filter out any slides given in the `skip_slides` toml array entry
-    let summary_src =  match book_skip_slides {
+    let summary_src = match book_skip_slides {
         None => summary_src,
         Some(skip_list) => summary_src
             .lines()
             // We can unwrap because we already matched on the `skip_list` being a toml array
-            .filter(|haystack| { 
+            .filter(|haystack| {
                 let skip_list = skip_list.as_array().unwrap();
                 skip_list.iter().all(|needle| {
                     // toml string arrays give you the opening and closing quotes - we need to trim them
