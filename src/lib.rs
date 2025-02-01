@@ -61,9 +61,7 @@ pub fn run(
     log::info!("Loading book: {}", mdbook_toml_path.display());
     let book_config_src = std::fs::read_to_string(&mdbook_toml_path)?;
     let book_config: toml::Table = toml::from_str(&book_config_src)?;
-    let skip_list_config = book_config
-        .get("mdbook")
-        .and_then(|t| t.as_table());
+    let skip_list_config = book_config.get("mdslides").and_then(|t| t.as_table());
     let book_config = book_config
         .get("book")
         .and_then(|t| t.as_table())
