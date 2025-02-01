@@ -103,8 +103,12 @@ pub fn run(
                     let needle = needle.trim_matches('"');
                     if haystack.contains(&needle.to_string()) {
                         log::info!("Skipped: {needle}");
+                        // Don't want it
+                        false
+                    } else {
+                        // Do want it
+                        true
                     }
-                    !haystack.contains(&needle.to_string())
                 })
             })
             // .lines() iterator chopped off the newlines, we have to put them back in
