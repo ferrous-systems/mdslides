@@ -61,6 +61,9 @@ pub fn run(
     log::info!("Loading book: {}", mdbook_toml_path.display());
     let book_config_src = std::fs::read_to_string(&mdbook_toml_path)?;
     let book_config: toml::Table = toml::from_str(&book_config_src)?;
+    let skip_list_config = book_config
+        .get("mdbook")
+        .and_then(|t| t.as_table());
     let book_config = book_config
         .get("book")
         .and_then(|t| t.as_table())
@@ -75,10 +78,9 @@ pub fn run(
         .get("src")
         .and_then(|v| v.as_str())
         .ok_or(Error::NoSrcField)?;
-    let book_skip_slides = book_config.get("skip_slides");
     log::info!("Book title: {:?}", book_title);
     log::info!("Book src: {:?}", book_src);
-    log::info!("Book skip list: {:?}", book_skip_slides);
+    log::info!("Book skip list: {:?}", skip_list_config);
 
     let mdbook_summary_path = {
         let mut path = mdbook_path.join(book_src);
@@ -87,33 +89,37 @@ pub fn run(
     };
 
     log::info!("Loading book summary: {}", mdbook_summary_path.display());
-    let summary_src = std::fs::read_to_string(&mdbook_summary_path)?;
+    let mut summary_src = std::fs::read_to_string(&mdbook_summary_path)?;
 
-    // Filter out any slides given in the `skip_slides` toml array entry
-    let summary_src = match book_skip_slides {
-        None => summary_src,
-        Some(skip_list) => summary_src
-            .lines()
-            // We can unwrap because we already matched on the `skip_list` being a toml array
-            .filter(|haystack| {
-                let skip_list = skip_list.as_array().unwrap();
-                skip_list.iter().all(|needle| {
-                    // toml string arrays give you the opening and closing quotes - we need to trim them
-                    let needle = &needle.to_string();
-                    let needle = needle.trim_matches('"');
-                    if haystack.contains(&needle.to_string()) {
-                        log::info!("Skipped: {needle}");
-                        // Don't want it
-                        false
-                    } else {
-                        // Do want it
-                        true
-                    }
+    // Filter `skip_slides`:
+    // If it is the case that the `book.toml` contains an `[mdbook]` entry
+    if let Some(skip_list) = skip_list_config {
+        // And that entry has a `skip_slides = ["..."]` array defined,
+        if let Some(skip_list) = skip_list.get("skip_slides") {
+            // Then we filter out the files in `skip_slides`
+            summary_src = summary_src
+                .lines()
+                .filter(|haystack| {
+                    // We can unwrap because we know `skip_list` is a toml array
+                    let skip_list = skip_list.as_array().unwrap();
+                    skip_list.iter().all(|needle| {
+                        // toml string arrays give you the opening and closing quotes - we need to trim them
+                        let needle = &needle.to_string();
+                        let needle = needle.trim_matches('"');
+                        if haystack.contains(&needle.to_string()) {
+                            log::info!("Skip: {haystack} {needle}");
+                            // Don't want this line
+                            false
+                        } else {
+                            // Do want this line
+                            true
+                        }
+                    })
                 })
-            })
-            // .lines() iterator chopped off the newlines, we have to put them back in
-            .map(|s| s.to_string() + "\n")
-            .collect::<String>(),
+                // .lines() iterator chopped off the newlines, we have to put them back in
+                .map(|s| s.to_string() + "\n")
+                .collect::<String>()
+        }
     };
     let index_entries = load_book(&summary_src)?;
 
