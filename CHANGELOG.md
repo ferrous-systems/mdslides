@@ -1,4 +1,6 @@
 # Change Log
+## v0.6.0 (2025-02-04, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.6.0))
+* Adds the `skip_slides` functionality
 
 ## v0.5.0 (2024-11-21, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.5.0))
 
