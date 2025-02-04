@@ -3,6 +3,7 @@
 ## v0.6.0 (2025-02-04, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.6.0))
 
 * Adds `skip_slides` functionality
+* Upgrade cargo-dist to v0.28
 
 ## v0.5.0 (2024-11-21, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.5.0))
 
