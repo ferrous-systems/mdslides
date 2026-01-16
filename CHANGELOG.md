@@ -1,5 +1,8 @@
 # Change Log
 
+* Introduce new `mdslides.toml` configuration file because `mdslides` v0.5 will not accept foreign
+  configuration anymore.
+
 ## v0.6.1 (2025-02-04, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.6.1))
 
 * Drops Arm Windows build due to build failures.
