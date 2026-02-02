@@ -20,6 +20,10 @@ pub enum Error {
     NoTitleField,
     #[error("No book table in book config")]
     NoBookTable,
+    #[error("Did not find book.toml configuration file")]
+    NoBookConfigFound,
+    #[error("Did not find mdslides.toml configuration file")]
+    NoMdslidesConfigFound,
     #[error("Invalid toml input file")]
     FormatError(#[from] toml::de::Error),
 }
@@ -36,6 +40,9 @@ pub enum IndexEntry {
 }
 
 /// Generate a slide deck from an mdbook.
+///
+/// Generating slides requires a `mdslides.toml` file in the folder which also contains the
+/// `book.toml` file.
 ///
 /// * `mdbook_path` - the location of the mdbook's `book.toml`. Assumed to be
 ///   the current directory if not given.
@@ -57,11 +64,25 @@ pub fn run(
         path.push("book.toml");
         path
     };
+    if !mdbook_toml_path.exists() {
+        return Err(Error::NoBookConfigFound);
+    }
+
+    let mdslides_toml_path = {
+        let mut path = mdbook_path.to_owned();
+        path.push("mdslides.toml");
+        path
+    };
+    if !mdslides_toml_path.exists() {
+        return Err(Error::NoMdslidesConfigFound);
+    }
 
     log::info!("Loading book: {}", mdbook_toml_path.display());
     let book_config_src = std::fs::read_to_string(&mdbook_toml_path)?;
     let book_config: toml::Table = toml::from_str(&book_config_src)?;
-    let skip_list_config = book_config.get("mdslides").and_then(|t| t.as_table());
+    let mdslides_config_src = std::fs::read_to_string(&mdslides_toml_path)?;
+    let mdslides_config: toml::Table = toml::from_str(&mdslides_config_src)?;
+    let skip_list_config = mdslides_config.get("slides").and_then(|t| t.as_table());
     let book_config = book_config
         .get("book")
         .and_then(|t| t.as_table())
@@ -89,12 +110,12 @@ pub fn run(
     log::info!("Loading book summary: {}", mdbook_summary_path.display());
     let mut summary_src = std::fs::read_to_string(&mdbook_summary_path)?;
 
-    // Filter `skip_slides`:
-    // If it is the case that the `book.toml` contains an `[mdbook]` entry
+    // Filter `skip`ped slides:
+    // If it is the case that the `mdslides.toml` contains an `skip` entry
     if let Some(skip_list) = skip_list_config {
-        // And that entry has a `skip_slides = ["..."]` array defined,
-        if let Some(skip_list) = skip_list.get("skip_slides") {
-            // Then we filter out the files in `skip_slides`
+        // And that entry has a `skip = ["..."]` array defined,
+        if let Some(skip_list) = skip_list.get("skip") {
+            // Then we filter out the files in `skip`
             summary_src = summary_src
                 .lines()
                 .filter(|haystack| {
@@ -188,11 +209,12 @@ pub fn load_book(summary_src: &str) -> Result<Vec<IndexEntry>, Error> {
         // Got event: End(Link(Inline, Borrowed("./intro.md"), Borrowed("")))
         // Got event: End(Item)
         match event {
-            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Heading(
-                pulldown_cmark::HeadingLevel::H1,
-                _fragment,
-                _classes,
-            )) => {
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Heading {
+                level: pulldown_cmark::HeadingLevel::H1,
+                id: _,
+                classes: _,
+                attrs: _,
+            }) => {
                 let Some(pulldown_cmark::Event::Text(content)) = parser.next() else {
                     panic!("Found heading with no content");
                 };
@@ -202,11 +224,12 @@ pub fn load_book(summary_src: &str) -> Result<Vec<IndexEntry>, Error> {
                 }
                 index_entries.push(IndexEntry::Heading(content.to_string()));
             }
-            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Heading(
-                pulldown_cmark::HeadingLevel::H2,
-                _fragment,
-                _classes,
-            )) => {
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Heading {
+                level: pulldown_cmark::HeadingLevel::H2,
+                id: _,
+                classes: _,
+                attrs: _,
+            }) => {
                 let Some(pulldown_cmark::Event::Text(content)) = parser.next() else {
                     panic!("Found subheading with no content");
                 };
@@ -215,10 +238,13 @@ pub fn load_book(summary_src: &str) -> Result<Vec<IndexEntry>, Error> {
             pulldown_cmark::Event::Start(pulldown_cmark::Tag::Item) => {
                 in_item = true;
             }
-            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_kind, path, _title))
-                if in_item =>
-            {
-                last_link = Some(path.to_string());
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link {
+                link_type: _,
+                dest_url,
+                title: _,
+                id: _,
+            }) if in_item => {
+                last_link = Some(dest_url.to_string());
             }
             pulldown_cmark::Event::Text(title) if last_link.is_some() => {
                 let index_entry = IndexEntry::Chapter {
@@ -227,12 +253,10 @@ pub fn load_book(summary_src: &str) -> Result<Vec<IndexEntry>, Error> {
                 };
                 index_entries.push(index_entry);
             }
-            pulldown_cmark::Event::End(pulldown_cmark::Tag::Link(_kind, _path, _title))
-                if in_item =>
-            {
+            pulldown_cmark::Event::End(pulldown_cmark::TagEnd::Link) if in_item => {
                 last_link = None;
             }
-            pulldown_cmark::Event::End(pulldown_cmark::Tag::Item) => {
+            pulldown_cmark::Event::End(pulldown_cmark::TagEnd::Item) => {
                 in_item = false;
             }
             _ => {
