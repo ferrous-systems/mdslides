@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.7.0 (2026-02-04, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.7.0))
+
 * Introduce new `mdslides.toml` configuration file because `mdslides` v0.5 will not accept foreign
   configuration anymore.
 
