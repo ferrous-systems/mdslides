@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.7.2 (2026-02-20, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.7.2))
+
+* Rebuild of v0.7.1, due to previous release missing all binary artefacts
+
 ## v0.7.1 (2026-02-20, [Github Release](https://github.com/ferrous-systems/mdslides/releases/tag/v0.7.1))
 
 * Rebuild of v0.7.0, due to previous release missing all binary artefacts
